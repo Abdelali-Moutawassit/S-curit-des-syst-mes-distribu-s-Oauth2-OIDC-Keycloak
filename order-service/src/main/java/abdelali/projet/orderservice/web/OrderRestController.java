@@ -1,0 +1,39 @@
+package abdelali.projet.orderservice.web;
+
+import abdelali.projet.orderservice.entities.Order;
+import abdelali.projet.orderservice.repositories.OrderRepository;
+import abdelali.projet.orderservice.restClients.InventoryRestClient;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/")
+public class OrderRestController {
+    private OrderRepository orderRepository;
+    private InventoryRestClient inventoryRestClient;
+
+    public OrderRestController(OrderRepository orderRepository, InventoryRestClient inventoryRestClient) {
+        this.orderRepository = orderRepository;
+        this.inventoryRestClient = inventoryRestClient;
+    }
+    @GetMapping("/orders")
+    @PreAuthorize("hasAuthority('USER')")
+    public List<Order> getOrders() {
+        return orderRepository.findAll();
+    }
+
+    @GetMapping("/orders/{id}")
+    @PreAuthorize("hasAuthority('USER')")
+    public Order getOrderById(@PathVariable String id) {
+        Order order = orderRepository.findById(id).get();
+        order.getProductItems().forEach(productItem -> {
+            productItem.setProduct(inventoryRestClient.getProductById(productItem.getProductId()));
+        });
+        return order;
+    }
+    }
